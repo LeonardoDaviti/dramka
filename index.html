@@ -218,6 +218,9 @@ html.dome #sheen{display:none}
 .seg button{flex:1;height:34px;border-radius:9px;font-size:14px;font-weight:600;transition:background .25s, color .25s}
 .seg button.on{background:var(--accent);color:var(--onAccent);box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .rowset{display:flex;align-items:center;justify-content:space-between;background:var(--btn);border:1px solid var(--glassBorder);border-radius:14px;padding:10px 14px;font-size:15px;font-weight:500}
+.reset{width:100%;height:46px;border-radius:14px;background:var(--btn);border:1px solid var(--glassBorder);color:var(--danger);font-size:15px;font-weight:600;transition:background .25s, color .25s, transform .2s var(--spring)}
+.reset:active{transform:scale(.97)}
+.reset.arm{background:var(--danger);color:#fff;border-color:transparent}
 .tog{width:51px;height:31px;border-radius:16px;background:rgba(120,120,128,.35);position:relative;transition:background .25s}
 .tog::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);transition:transform .3s var(--spring)}
 .tog.on{background:#34c759}.tog.on::after{transform:translateX(20px)}
@@ -293,7 +296,7 @@ const TEXT = {
     huff: "ფუკი", huffed: "ფუკი!", draw: "ფრე", offered: "ფრე ✓", accept: "თანხმობა",
     resign: "დანებება (დააჭირეთ და გააჩერეთ)", settings: "პარამეტრები",
     drawResult: "ფრე", draws: "ფრე", game: "პარტია", tapToContinue: "შეეხეთ გასაგრძელებლად",
-    design: "დიზაინი", language: "ენა", sound: "ხმა", done: "მზადაა", king: "დამკა!"
+    design: "დიზაინი", data: "მონაცემები", resetScores: "ანგარიშის განულება", resetConfirm: "დააჭირეთ ისევ დასადასტურებლად", language: "ენა", sound: "ხმა", done: "მზადაა", king: "დამკა!"
   },
   en: {
     names: { saba: "Saba", mariam: "Mariam" },
@@ -303,7 +306,7 @@ const TEXT = {
     huff: "Huff", huffed: "Huffed!", draw: "Draw", offered: "Draw ✓", accept: "Accept",
     resign: "Resign (press and hold)", settings: "Settings",
     drawResult: "Draw", draws: "Draws", game: "Game", tapToContinue: "Tap to continue",
-    design: "Design", language: "Language", sound: "Sound", done: "Done", king: "Damka!"
+    design: "Design", data: "Data", resetScores: "Reset scores", resetConfirm: "Tap again to confirm", language: "Language", sound: "Sound", done: "Done", king: "Damka!"
   }
 };
 
@@ -901,12 +904,35 @@ function renderSheet() {
     <h3>${Lx.language}</h3>
     <div class="seg"><button data-l="ka" class="${S.lang === "ka" ? "on" : ""}">ქართული</button><button data-l="en" class="${S.lang === "en" ? "on" : ""}">English</button></div>
     <h3>${Lx.sound}</h3>
-    <div class="rowset"><span>${Lx.sound}</span><button class="tog${S.muted ? "" : " on"}" aria-label="${Lx.sound}"></button></div>`;
+    <div class="rowset"><span>${Lx.sound}</span><button class="tog${S.muted ? "" : " on"}" aria-label="${Lx.sound}"></button></div>
+    <h3>${Lx.data}</h3>
+    <button class="reset">${Lx.resetScores}</button>`;
   sheet.querySelectorAll("[data-tv]").forEach(el => applyVars(el, themeById(el.dataset.tv)));
   sheet.querySelector(".done").onclick = closeSheet;
   sheet.querySelectorAll(".sw").forEach(b => b.onclick = () => { setTheme(b.dataset.t); sound("select"); renderSheet(); });
   sheet.querySelectorAll("[data-l]").forEach(b => b.onclick = () => { S.lang = b.dataset.l; save(); applyLang(); renderSheet(); render(); });
   sheet.querySelector(".tog").onclick = () => { S.muted = !S.muted; save(); renderSheet(); sound("select"); };
+  const rb = sheet.querySelector(".reset");
+  let armT;
+  rb.onclick = () => {
+    if (!rb.classList.contains("arm")) {
+      rb.classList.add("arm"); rb.textContent = Lx.resetConfirm; vibrate(20);
+      armT = setTimeout(() => { rb.classList.remove("arm"); rb.textContent = Lx.resetScores; }, 3000);
+      return;
+    }
+    clearTimeout(armT);
+    resetScores();
+    closeSheet();
+  };
+}
+function resetScores() {
+  // Also starts a fresh game, so a corrupted saved position is cleared too.
+  S.score = { saba: 0, mariam: 0, draws: 0 };
+  S.gameNo = 1;
+  S.game = newGame(1);
+  ui.sel = null; ui.huffMode = null; ui.drag = null; ui.shown = null;
+  save();
+  sound("select");
 }
 function setTheme(id) {
   const t = themeById(id); S.theme = t.id; save();
