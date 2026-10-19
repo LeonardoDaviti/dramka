@@ -126,8 +126,8 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
   transform:translateY(calc(var(--h) * -1 - var(--lift))) scale(var(--sc));
   transition:transform .25s var(--spring), box-shadow .25s, opacity .3s, filter .3s;
 }
-.w .disk, .disk.w{--top:var(--wTop);--edge:var(--wEdge);--side:var(--wSide);--crown:var(--wCrown)}
-.b .disk, .disk.b{--top:var(--bTop);--edge:var(--bEdge);--side:var(--bSide);--crown:var(--bCrown)}
+.w .disk, .disk.w{--hiC:var(--wHi,#fff);--top:var(--wTop);--edge:var(--wEdge);--side:var(--wSide);--crown:var(--wCrown)}
+.b .disk, .disk.b{--hiC:var(--bHi,#888);--top:var(--bTop);--edge:var(--bEdge);--side:var(--bSide);--crown:var(--bCrown)}
 .king .disk{
   box-shadow:
     inset 0 calc(var(--u)*.02) calc(var(--u)*.025) rgba(255,255,255,.4),
@@ -152,6 +152,27 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .huffing .pc.opp .disk{cursor:crosshair}
 #grid.huffing{cursor:crosshair}
 #grid.huffing #squares{filter:saturate(.75) brightness(.92);transition:filter .3s}
+
+/* ---------- Dome pieces & frameless board (Noir) ---------- */
+.dome .disk{
+  --h:0px;inset:12%;
+  background:radial-gradient(circle at 50% 30%, var(--hiC) 0, var(--top) 42%, var(--edge) 100%);
+  box-shadow:
+    inset 0 calc(var(--u)*-.04) calc(var(--u)*.08) rgba(0,0,0,.3),
+    0 calc(var(--u)*.05 + var(--lift)) calc(var(--u)*.16 + var(--lift)) rgba(0,0,0,.55);
+  transform:translateY(calc(var(--lift) * -1)) scale(var(--sc));
+}
+.dome .king .disk{
+  box-shadow:
+    inset 0 calc(var(--u)*-.04) calc(var(--u)*.08) rgba(0,0,0,.3),
+    0 0 0 calc(var(--u)*.035) var(--crown),
+    0 calc(var(--u)*.05 + var(--lift)) calc(var(--u)*.18 + var(--lift)) rgba(0,0,0,.6);
+  transform:translateY(calc(var(--lift) * -1)) scale(var(--sc));
+}
+.dome .king .disk::after{filter:none}
+html.dome #board{padding:0;background:none;border-radius:calc(var(--bsize) * .014);box-shadow:0 24px 50px -22px rgba(0,0,0,.8)}
+html.dome #squares{border-radius:calc(var(--bsize) * .014);box-shadow:none}
+html.dome #sheen{display:none}
 
 /* ---------- Toast ---------- */
 #toast{
@@ -378,6 +399,14 @@ const THEMES = [
     wTop: "#fffaf7", wEdge: "#f1ddd5", wSide: "#d9bfb5", wCrown: "#c47a63",
     bTop: "#a65b42", bEdge: "#c98068", bSide: "#6b3524", bCrown: "#ffe3d6",
     accent: "#bf6e55", onAccent: "#fff", mark: "rgba(255,255,255,.35)", gloss: ".65", groove: ".04", danger: "#d70015" } },
+  { id: "noir", name: "Noir", meta: "#0e0e0f", dome: true, v: {
+    page: "radial-gradient(120% 90% at 50% 0%, #1f1f21 0%, #111112 55%, #070708 100%)",
+    text: "#f2f2f2", glass: "rgba(255,255,255,.05)", glassBorder: "rgba(255,255,255,.09)", btn: "rgba(255,255,255,.07)", sheet: "rgba(24,24,26,.88)",
+    frame: "#141415", light: "#e6e6e6", dark: "#222223", inlay: "transparent",
+    tex: TEX.none, texOp: "0", texBlend: "normal",
+    wTop: "#f2f2f2", wEdge: "#b9b9bb", wHi: "#ffffff", wSide: "#9a9a9c", wCrown: "#b8913c",
+    bTop: "#3b3b3d", bEdge: "#141415", bHi: "#707073", bSide: "#0a0a0a", bCrown: "#d4b26a",
+    accent: "#c9a24e", onAccent: "#141006", mark: "rgba(201,162,78,.22)", gloss: "0", groove: "0", danger: "#ff453a" } },
   { id: "glass", name: "Liquid Glass", meta: "#3a2a7a", v: {
     page: "radial-gradient(60% 50% at 15% 10%, #ff6a88 0%, rgba(255,106,136,0) 70%), radial-gradient(60% 55% at 90% 30%, #5e5ce6 0%, rgba(94,92,230,0) 70%), radial-gradient(70% 60% at 30% 95%, #ff9f0a 0%, rgba(255,159,10,0) 70%), linear-gradient(160deg,#3a2a7a,#1b1640)",
     text: "#ffffff", glass: "rgba(255,255,255,.14)", glassBorder: "rgba(255,255,255,.35)", btn: "rgba(255,255,255,.16)", sheet: "rgba(60,50,120,.55)",
@@ -864,7 +893,7 @@ function renderSheet() {
     <h3>${Lx.design}</h3>
     <div class="themes">${THEMES.map(t => `
       <button class="sw${t.id === S.theme ? " cur" : ""}" data-t="${t.id}">
-        <div class="pv" data-tv="${t.id}">
+        <div class="pv${t.dome ? " dome" : ""}" data-tv="${t.id}">
           <div class="g"><i></i><i class="d"></i><i class="d"></i><i></i></div>
           <div class="p w" style="left:58%;top:8%"><div class="disk"></div></div>
           <div class="p b king" style="left:8%;top:58%"><div class="disk"></div></div>
@@ -882,6 +911,7 @@ function renderSheet() {
 function setTheme(id) {
   const t = themeById(id); S.theme = t.id; save();
   applyVars(document.documentElement, t);
+  document.documentElement.classList.toggle("dome", !!t.dome);
   document.documentElement.style.setProperty("--pageAccent", t.v.accent);
   document.querySelector('meta[name="theme-color"]').content = t.meta;
 }
